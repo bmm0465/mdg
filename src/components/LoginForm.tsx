@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import axios from 'axios';
+import { LoginResponse } from '@/types';
 
 interface LoginFormProps {
   onLogin: () => void;
@@ -29,7 +30,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
       if (isLogin) {
         // 로그인
         console.log('로그인 시도:', formData.email, formData.password);
-        const response = await axios.post('/api/auth/login', {
+        const response = await axios.post<LoginResponse>('/api/auth/login', {
           email: formData.email,
           password: formData.password
         });

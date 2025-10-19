@@ -63,3 +63,15 @@ export interface ApiResponse<T> {
   error?: string;
   detail?: string;
 }
+
+// 로그인 응답 타입
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: {
+    email: string;
+    name: string;
+    school: string;
+    role: string;
+  };
+}
