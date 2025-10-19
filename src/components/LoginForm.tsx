@@ -53,9 +53,12 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
         setSuccess('회원가입이 완료되었습니다! 로그인해주세요.');
         setTimeout(() => setIsLogin(true), 2000);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      setError(error.response?.data?.detail || '오류가 발생했습니다.');
+      const errorMessage = error && typeof error === 'object' && 'response' in error 
+        ? (error as { response?: { data?: { detail?: string } } }).response?.data?.detail 
+        : '오류가 발생했습니다.';
+      setError(errorMessage || '오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
