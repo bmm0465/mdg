@@ -15,19 +15,25 @@ export default function Dashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('access_token');
+      console.log('대시보드 토큰 체크:', token);
+      
       if (!token) {
+        console.log('토큰 없음, 홈으로 리다이렉트');
         router.push('/');
         return;
       }
 
       try {
+        console.log('API 호출 시도');
         const response = await axios.get<User>('/api/auth/me', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
+        console.log('사용자 정보 받음:', response.data);
         setUser(response.data);
-      } catch {
+      } catch (error) {
+        console.error('인증 실패:', error);
         localStorage.removeItem('access_token');
         router.push('/');
       } finally {

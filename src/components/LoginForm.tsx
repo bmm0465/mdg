@@ -28,22 +28,34 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     try {
       if (isLogin) {
         // 로그인
-        await axios.post('/api/auth/login', {
+        console.log('로그인 시도:', formData.email, formData.password);
+        const response = await axios.post('/api/auth/login', {
           email: formData.email,
           password: formData.password
         });
 
-        localStorage.setItem('access_token', 'demo-token');
-        setSuccess('로그인 성공! 대시보드로 이동합니다.');
-        setTimeout(() => onLogin(), 1500);
+        console.log('로그인 응답:', response.data);
+
+        if (response.data.access_token) {
+          localStorage.setItem('access_token', response.data.access_token);
+          console.log('토큰 저장됨:', response.data.access_token);
+          setSuccess('로그인 성공! 대시보드로 이동합니다.');
+          setTimeout(() => {
+            console.log('onLogin 호출');
+            onLogin();
+          }, 1500);
+        } else {
+          setError('로그인에 실패했습니다.');
+        }
       } else {
         // 회원가입
         await axios.post('/api/auth/register', formData);
         setSuccess('회원가입이 완료되었습니다! 로그인해주세요.');
         setTimeout(() => setIsLogin(true), 2000);
       }
-    } catch {
-      setError('오류가 발생했습니다.');
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setError(error.response?.data?.detail || '오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
