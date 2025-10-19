@@ -4,10 +4,11 @@ AI 기반 초등학교 영어 수업 자료 자동 생성 시스템입니다. Ne
 
 ## ✨ 주요 기능
 
-- **자동 자료 생성**: 목표 의사소통 기능, 문법, 어휘를 바탕으로 Short Story와 Teacher's Talk Script 자동 생성
+- **AI 기반 자료 생성**: GPT-4o를 활용한 고품질 Short Story와 Teacher's Talk Script 자동 생성
+- **맞춤형 수업 자료**: 목표 의사소통 기능, 문법, 어휘에 맞는 개인화된 자료 생성
 - **사용자 인증**: JWT 기반 로그인/회원가입 시스템
 - **반응형 디자인**: 모바일과 데스크톱에서 모두 최적화된 UI
-- **실시간 생성**: OpenAI API를 통한 실시간 자료 생성
+- **실시간 생성**: OpenAI GPT-4o API를 통한 실시간 자료 생성
 
 ## 🚀 기술 스택
 
@@ -15,7 +16,7 @@ AI 기반 초등학교 영어 수업 자료 자동 생성 시스템입니다. Ne
 - **Backend**: Next.js API Routes
 - **Authentication**: JWT (JSON Web Tokens)
 - **Database**: Supabase (선택사항)
-- **AI**: OpenAI GPT-3.5-turbo
+- **AI**: OpenAI GPT-4o
 - **Deployment**: Vercel
 
 ## 📦 설치 및 실행
@@ -39,8 +40,8 @@ cp env.example .env.local
 `.env.local` 파일을 열어 필요한 환경변수를 설정하세요:
 
 ```env
-# OpenAI API Key (필수)
-OPENAI_API_KEY=your_openai_api_key_here
+# OpenAI API Key (필수 - GPT-4o 사용을 위해 필요)
+OPENAI_API_KEY=sk-your_openai_api_key_here
 
 # Supabase 설정 (선택사항)
 SUPABASE_URL=your_supabase_url_here
@@ -62,7 +63,7 @@ npm run dev
 
 ### 2. 환경변수 설정
 Vercel 대시보드에서 다음 환경변수를 설정하세요:
-- `OPENAI_API_KEY`: OpenAI API 키
+- `OPENAI_API_KEY`: OpenAI API 키 (GPT-4o 사용을 위해 필수)
 - `SUPABASE_URL`: Supabase URL (선택사항)
 - `SUPABASE_ANON_KEY`: Supabase Anon Key (선택사항)
 

@@ -1,4 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
+
+// OpenAI 클라이언트 초기화
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // 간단한 인증 체크 함수
 function checkAuth(request: NextRequest) {
@@ -23,11 +29,108 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { target_communicative_functions, target_grammar_forms, target_vocabulary } = body;
 
-    // OpenAI API 호출 (실제 구현에서는 환경변수에서 API 키 가져오기)
-    const openaiApiKey = process.env.OPENAI_API_KEY;
-    
-    if (!openaiApiKey) {
-      // 데모 데이터 반환
+    // OpenAI API 키 확인
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { success: false, error: 'OpenAI API 키가 설정되지 않았습니다.' },
+        { status: 500 }
+      );
+    }
+
+    try {
+      // GPT-4o를 사용한 자료 생성
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `당신은 초등학교 영어 교사입니다. 주어진 학습 목표에 맞는 Short Story와 Teacher's Talk Script를 생성해주세요.
+
+다음 JSON 형식으로 응답해주세요:
+{
+  "unit": {
+    "target_communicative_functions": ["기능1", "기능2"],
+    "target_grammar_forms": ["문법1", "문법2"],
+    "target_vocabulary": ["단어1", "단어2"]
+  },
+  "short_story": {
+    "title": "이야기 제목",
+    "content": "이야기 내용 (초등학생 수준, 80-120단어)",
+    "word_count": 단어수,
+    "sentence_count": 문장수
+  },
+  "teacher_script": {
+    "opening": ["도입부 질문들"],
+    "during_reading": ["읽기 중 활동들"],
+    "after_reading": ["읽기 후 질문들"],
+    "key_expression_practice": ["핵심 표현 연습"],
+    "retelling_guidance": ["리텔링 가이드"],
+    "evaluation_criteria": ["평가 기준"],
+    "wrap_up": ["마무리 활동들"]
+  }
+}`
+          },
+          {
+            role: "user",
+            content: `다음 학습 목표로 영어 수업 자료를 생성해주세요:
+
+목표 의사소통 기능: ${target_communicative_functions.join(', ')}
+목표 문법 형태: ${target_grammar_forms.join(', ')}
+목표 어휘: ${target_vocabulary.join(', ')}
+
+초등학생들이 흥미를 가질 수 있는 이야기를 만들고, 교사가 쉽게 사용할 수 있는 상세한 수업 가이드를 제공해주세요.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      });
+
+      const responseText = completion.choices[0]?.message?.content;
+      
+      if (!responseText) {
+        throw new Error('OpenAI 응답이 비어있습니다.');
+      }
+
+      // JSON 파싱
+      let generatedData;
+      try {
+        generatedData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('JSON 파싱 오류:', parseError);
+        // JSON 파싱 실패 시 기본 구조로 감싸기
+        generatedData = {
+          unit: {
+            target_communicative_functions,
+            target_grammar_forms,
+            target_vocabulary
+          },
+          short_story: {
+            title: "AI Generated Story",
+            content: responseText,
+            word_count: responseText.split(' ').length,
+            sentence_count: responseText.split('.').length - 1
+          },
+          teacher_script: {
+            opening: ["Let's read this story together!"],
+            during_reading: ["What do you see in the story?"],
+            after_reading: ["What did you learn from this story?"],
+            key_expression_practice: ["Let's practice the key expressions."],
+            retelling_guidance: ["Now, let's tell the story together."],
+            evaluation_criteria: ["Can you understand the story?"],
+            wrap_up: ["Great job! See you next time!"]
+          }
+        };
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: generatedData
+      });
+
+    } catch (openaiError) {
+      console.error('OpenAI API 오류:', openaiError);
+      
+      // OpenAI API 오류 시 데모 데이터 반환
       const demoData = {
         unit: {
           target_communicative_functions,
@@ -96,41 +199,6 @@ export async function POST(request: NextRequest) {
         data: demoData
       });
     }
-
-    // 실제 OpenAI API 호출 (구현 예시)
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert English teacher creating materials for elementary school students. Create engaging short stories and detailed teacher scripts.'
-          },
-          {
-            role: 'user',
-            content: `Create English teaching materials with these targets:
-            - Communicative functions: ${target_communicative_functions.join(', ')}
-            - Grammar forms: ${target_grammar_forms.join(', ')}
-            - Vocabulary: ${target_vocabulary.join(', ')}
-            
-            Please provide a short story and detailed teacher script in JSON format.`
-          }
-        ]
-      })
-    });
-
-    const data = await response.json();
-    
-    // 실제 구현에서는 OpenAI 응답을 파싱하여 적절한 형식으로 변환
-    return NextResponse.json({
-      success: true,
-      data: data.choices[0].message.content
-    });
 
   } catch (error) {
     console.error('Generate error:', error);
