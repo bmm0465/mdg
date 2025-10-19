@@ -29,13 +29,13 @@ export default function MaterialGenerator() {
         target_vocabulary: formData.vocabulary.split(',').map(s => s.trim())
       };
       
-      const response = await axios.post('/api/generate', requestData, {
+      const response = await axios.post<{success: boolean; data?: GeneratedData; error?: string}>('/api/generate', requestData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         setResult(response.data.data);
       } else {
         setError(response.data.error || '자료 생성에 실패했습니다.');
@@ -50,13 +50,13 @@ export default function MaterialGenerator() {
   const handleExample = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await axios.get('/api/example', {
+      const response = await axios.get<{success: boolean; data?: {target_communicative_functions: string[]; target_grammar_forms: string[]; target_vocabulary: string[]}}>('/api/example', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (response.data.success) {
+      if (response.data.success && response.data.data) {
         setFormData({
           communicative_functions: response.data.data.target_communicative_functions.join(', '),
           grammar_forms: response.data.data.target_grammar_forms.join(', '),

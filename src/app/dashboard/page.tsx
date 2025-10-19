@@ -21,7 +21,7 @@ export default function Dashboard() {
       }
 
       try {
-        const response = await axios.get('/api/auth/me', {
+        const response = await axios.get<User>('/api/auth/me', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
