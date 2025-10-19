@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { GeneratedData } from '@/types';
 
 interface GeneratedContentProps {
-  data: any;
+  data: GeneratedData;
 }
 
 export default function GeneratedContent({ data }: GeneratedContentProps) {

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import LoginForm from '@/components/LoginForm';
 
 export default function Home() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -13,7 +12,6 @@ export default function Home() {
     // 토큰 확인
     const token = localStorage.getItem('access_token');
     if (token) {
-      setIsAuthenticated(true);
       router.push('/dashboard');
     } else {
       setLoading(false);
@@ -49,7 +47,6 @@ export default function Home() {
         </div>
 
         <LoginForm onLogin={() => {
-          setIsAuthenticated(true);
           router.push('/dashboard');
         }} />
       </div>

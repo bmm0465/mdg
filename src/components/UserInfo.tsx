@@ -1,7 +1,9 @@
 'use client';
 
+import { User } from '@/types';
+
 interface UserInfoProps {
-  user: any;
+  user: User | null;
   onLogout: () => void;
 }
 

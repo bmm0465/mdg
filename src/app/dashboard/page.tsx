@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import MaterialGenerator from '@/components/MaterialGenerator';
 import UserInfo from '@/components/UserInfo';
+import { User } from '@/types';
 
 export default function Dashboard() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -26,7 +27,7 @@ export default function Dashboard() {
           }
         });
         setUser(response.data);
-      } catch (error) {
+      } catch {
         localStorage.removeItem('access_token');
         router.push('/');
       } finally {
@@ -61,7 +62,7 @@ export default function Dashboard() {
                 🎓 영어 수업 자료 자동 생성 에이전트
               </h1>
               <p className="text-gray-600">
-                초등학생용 Short Story와 Teacher's Talk Script를 쉽게 만들어보세요
+                초등학생용 Short Story와 Teacher&apos;s Talk Script를 쉽게 만들어보세요
               </p>
             </div>
             <UserInfo user={user} onLogout={handleLogout} />

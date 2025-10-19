@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       { detail: '이메일 또는 비밀번호가 올바르지 않습니다.' },
       { status: 401 }
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { detail: '서버 오류가 발생했습니다.' },
       { status: 500 }

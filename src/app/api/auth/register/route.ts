@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         role: 'teacher'
       }
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { detail: '서버 오류가 발생했습니다.' },
       { status: 500 }

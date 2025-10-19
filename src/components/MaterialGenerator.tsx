@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import GeneratedContent from './GeneratedContent';
+import { GeneratedData, GenerateRequest } from '@/types';
 
 export default function MaterialGenerator() {
   const [formData, setFormData] = useState({
@@ -12,7 +13,7 @@ export default function MaterialGenerator() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<GeneratedData | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,11 +23,13 @@ export default function MaterialGenerator() {
 
     try {
       const token = localStorage.getItem('access_token');
-      const response = await axios.post('/api/generate', {
+      const requestData: GenerateRequest = {
         target_communicative_functions: formData.communicative_functions.split(',').map(s => s.trim()),
         target_grammar_forms: formData.grammar_forms.split(',').map(s => s.trim()),
         target_vocabulary: formData.vocabulary.split(',').map(s => s.trim())
-      }, {
+      };
+      
+      const response = await axios.post('/api/generate', requestData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -37,8 +40,8 @@ export default function MaterialGenerator() {
       } else {
         setError(response.data.error || '자료 생성에 실패했습니다.');
       }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || '오류가 발생했습니다.');
+    } catch {
+      setError('오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -60,7 +63,7 @@ export default function MaterialGenerator() {
           vocabulary: response.data.data.target_vocabulary.join(', ')
         });
       }
-    } catch (err: any) {
+    } catch {
       setError('예시 데이터를 불러오는데 실패했습니다.');
     }
   };
