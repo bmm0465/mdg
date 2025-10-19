@@ -9,13 +9,6 @@ export interface User {
   is_active: boolean;
 }
 
-// 로그인 응답 타입
-export interface LoginResponse {
-  access_token: string;
-  token_type: string;
-  user: User;
-}
-
 // 자료 생성 요청 타입
 export interface GenerateRequest {
   target_communicative_functions: string[];
@@ -68,10 +61,25 @@ export interface ApiResponse<T> {
 export interface LoginResponse {
   access_token: string;
   token_type: string;
-  user: {
-    email: string;
-    name: string;
-    school: string;
-    role: string;
-  };
+  user: User;
+}
+
+// 예시 데이터 타입
+export interface ExampleData {
+  target_communicative_functions: string[];
+  target_grammar_forms: string[];
+  target_vocabulary: string[];
+}
+
+// 예시 데이터 API 응답 타입
+export interface ExampleResponse {
+  success: boolean;
+  data: ExampleData;
+}
+
+// 자료 생성 API 응답 타입
+export interface GenerateResponse {
+  success: boolean;
+  data?: GeneratedData;
+  error?: string;
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import GeneratedContent from './GeneratedContent';
-import { GeneratedData, GenerateRequest } from '@/types';
+import { GeneratedData, GenerateRequest, ExampleResponse, GenerateResponse } from '@/types';
 
 export default function MaterialGenerator() {
   const [formData, setFormData] = useState({
@@ -29,7 +29,7 @@ export default function MaterialGenerator() {
         target_vocabulary: formData.vocabulary.split(',').map(s => s.trim())
       };
       
-      const response = await axios.post<{success: boolean; data?: GeneratedData; error?: string}>('/api/generate', requestData, {
+      const response = await axios.post<GenerateResponse>('/api/generate', requestData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -50,13 +50,13 @@ export default function MaterialGenerator() {
   const handleExample = async () => {
     try {
       const token = localStorage.getItem('access_token');
-      const response = await axios.get<{success: boolean; data?: {target_communicative_functions: string[]; target_grammar_forms: string[]; target_vocabulary: string[]}}>('/api/example', {
+      const response = await axios.get<ExampleResponse>('/api/example', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (response.data.success && response.data.data) {
+      if (response.data.success) {
         setFormData({
           communicative_functions: response.data.data.target_communicative_functions.join(', '),
           grammar_forms: response.data.data.target_grammar_forms.join(', '),

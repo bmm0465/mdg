@@ -20,10 +20,13 @@ export async function POST(request: NextRequest) {
         access_token: token,
         token_type: 'bearer',
         user: {
+          id: 'demo-user-1',
           email: 'demo@example.com',
           name: '데모 사용자',
           school: '데모 초등학교',
-          role: 'teacher'
+          role: 'teacher',
+          created_at: new Date().toISOString(),
+          is_active: true
         }
       });
     }
