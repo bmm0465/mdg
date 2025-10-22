@@ -32,6 +32,7 @@ export default function RewriteActivity({
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showVocabularyAnswers, setShowVocabularyAnswers] = useState(false);
 
   // 어휘 빈칸 문제 생성
   const generateVocabularyQuestions = () => {
@@ -72,8 +73,14 @@ export default function RewriteActivity({
       return;
     }
     
-    setCurrentStep(2);
+    // 정답 표시
+    setShowVocabularyAnswers(true);
     setError(null);
+  };
+
+  // 2단계로 진행
+  const proceedToStep2 = () => {
+    setCurrentStep(2);
   };
 
   // 다시 쓰기 평가
@@ -145,22 +152,44 @@ export default function RewriteActivity({
               }))}
               placeholder="답을 입력하세요"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              disabled={showVocabularyAnswers}
             />
-            <div className="mt-2 text-sm text-gray-500">
-              정답: <span className="font-medium">{question.word}</span>
-            </div>
+            {showVocabularyAnswers && (
+              <div className="mt-2 p-2 rounded-lg bg-green-50 border border-green-200">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-700">정답:</span>
+                  <span className="text-sm text-green-800 font-medium">{question.word}</span>
+                  {vocabularyAnswers[question.id]?.toLowerCase() === question.word.toLowerCase() ? (
+                    <span className="text-xs text-green-600">✓ 정답입니다!</span>
+                  ) : (
+                    <span className="text-xs text-orange-600">다시 시도해보세요</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       <div className="flex justify-end">
-        <button
-          onClick={handleVocabularySubmit}
-          className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <CheckCircle className="w-5 h-5" />
-          다음 단계로
-        </button>
+        {!showVocabularyAnswers ? (
+          <button
+            onClick={handleVocabularySubmit}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <CheckCircle className="w-5 h-5" />
+            답안 확인하기
+          </button>
+        ) : (
+          <button
+            onClick={proceedToStep2}
+            className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <CheckCircle className="w-5 h-5" />
+            다음 단계로
+          </button>
+        )}
       </div>
     </div>
   );
@@ -178,8 +207,11 @@ export default function RewriteActivity({
       </div>
 
       <div className="bg-gray-50 p-4 rounded-lg">
-        <h4 className="font-medium text-gray-800 mb-2">원본 이야기</h4>
-        <p className="text-gray-700 text-sm leading-relaxed">{storyContent}</p>
+        <h4 className="font-medium text-gray-800 mb-2">💡 힌트</h4>
+        <p className="text-gray-700 text-sm leading-relaxed">
+          이전에 읽었던 이야기를 기억해보세요. 등장인물, 사건의 순서, 결말을 포함하여 
+          자신만의 방식으로 다시 써보세요. 창의적으로 표현해도 좋습니다!
+        </p>
       </div>
 
       <div>
@@ -337,6 +369,7 @@ export default function RewriteActivity({
               setRewriteText('');
               setEvaluation(null);
               setError(null);
+              setShowVocabularyAnswers(false);
             }}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
