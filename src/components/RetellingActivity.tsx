@@ -6,6 +6,7 @@ import { Mic, MicOff, Play, Pause, Square, CheckCircle, AlertCircle } from 'luci
 interface RetellingActivityProps {
   questions: string[];
   token?: string;
+  storyContent?: string;
 }
 
 interface RecordingState {
@@ -27,7 +28,19 @@ interface TranscriptionResult {
   }>;
 }
 
-export default function RetellingActivity({ questions, token }: RetellingActivityProps) {
+interface EvaluationResult {
+  overall_score: number;
+  content_accuracy: number;
+  question_relevance: number;
+  language_usage: number;
+  completeness: number;
+  feedback: string;
+  suggestions: string[];
+  strengths: string[];
+  areas_for_improvement: string[];
+}
+
+export default function RetellingActivity({ questions, token, storyContent }: RetellingActivityProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [recordingState, setRecordingState] = useState<RecordingState>({
     isRecording: false,
@@ -37,7 +50,9 @@ export default function RetellingActivity({ questions, token }: RetellingActivit
     audioUrl: null
   });
   const [transcription, setTranscription] = useState<TranscriptionResult | null>(null);
+  const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -87,6 +102,11 @@ export default function RetellingActivity({ questions, token }: RetellingActivit
           audioUrl
         }));
         stream.getTracks().forEach(track => track.stop());
+        
+        // 녹음 완료 시 자동으로 전사 시작
+        setTimeout(() => {
+          transcribeAudio(audioBlob);
+        }, 1000);
       };
 
       mediaRecorder.start();
@@ -137,8 +157,9 @@ export default function RetellingActivity({ questions, token }: RetellingActivit
   };
 
   // 전사 요청
-  const transcribeAudio = async () => {
-    if (!recordingState.audioBlob || !token) {
+  const transcribeAudio = async (audioBlob?: Blob) => {
+    const audioToTranscribe = audioBlob || recordingState.audioBlob;
+    if (!audioToTranscribe || !token) {
       setError('녹음 파일이나 인증 토큰이 없습니다.');
       return;
     }
@@ -148,7 +169,7 @@ export default function RetellingActivity({ questions, token }: RetellingActivit
 
     try {
       const formData = new FormData();
-      formData.append('audio', recordingState.audioBlob, 'recording.wav');
+      formData.append('audio', audioToTranscribe, 'recording.wav');
 
       const response = await fetch('/api/transcribe', {
         method: 'POST',
@@ -165,12 +186,57 @@ export default function RetellingActivity({ questions, token }: RetellingActivit
 
       const result = await response.json();
       setTranscription(result.data);
+      
+      // 전사 완료 후 자동으로 평가 시작
+      if (result.data.text && storyContent) {
+        evaluateAnswer(result.data.text);
+      }
     } catch (err) {
       console.error('전사 오류:', err);
       const errorMessage = err instanceof Error ? err.message : '전사 중 오류가 발생했습니다.';
       setError(errorMessage);
     } finally {
       setIsTranscribing(false);
+    }
+  };
+
+  // 답변 평가
+  const evaluateAnswer = async (transcribedText: string) => {
+    if (!token || !storyContent) {
+      setError('평가를 위한 정보가 부족합니다.');
+      return;
+    }
+
+    setIsEvaluating(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/evaluate-answer', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          question: questions[currentQuestionIndex],
+          studentAnswer: transcribedText,
+          storyContent: storyContent,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '평가에 실패했습니다.');
+      }
+
+      const result = await response.json();
+      setEvaluation(result.data);
+    } catch (err) {
+      console.error('평가 오류:', err);
+      const errorMessage = err instanceof Error ? err.message : '평가 중 오류가 발생했습니다.';
+      setError(errorMessage);
+    } finally {
+      setIsEvaluating(false);
     }
   };
 
@@ -186,6 +252,7 @@ export default function RetellingActivity({ questions, token }: RetellingActivit
         audioUrl: null
       });
       setTranscription(null);
+      setEvaluation(null);
       setError(null);
     }
   };
@@ -202,6 +269,7 @@ export default function RetellingActivity({ questions, token }: RetellingActivit
         audioUrl: null
       });
       setTranscription(null);
+      setEvaluation(null);
       setError(null);
     }
   };
@@ -334,28 +402,118 @@ export default function RetellingActivity({ questions, token }: RetellingActivit
               <p className="text-sm text-gray-600">
                 <strong>신뢰도:</strong> {(transcription.confidence * 100).toFixed(1)}%
               </p>
-              {transcription.words.length > 0 && (
-                <div className="mt-2">
-                  <strong className="text-sm text-gray-600">단어별 분석:</strong>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {transcription.words.map((word, index) => (
-                      <span
-                        key={index}
-                        className={`px-2 py-1 rounded text-xs ${
-                          word.confidence > 0.8
-                            ? 'bg-green-100 text-green-800'
-                            : word.confidence > 0.6
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                        title={`신뢰도: ${(word.confidence * 100).toFixed(1)}%`}
-                      >
-                        {word.word}
-                      </span>
+            </div>
+          </div>
+        )}
+
+        {/* 평가 결과 */}
+        {evaluation && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h5 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-blue-600" />
+              AI 평가 결과
+            </h5>
+            
+            {/* 전체 점수 */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-gray-700">전체 점수</span>
+                <span className={`text-2xl font-bold ${
+                  evaluation.overall_score >= 80 ? 'text-green-600' :
+                  evaluation.overall_score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {evaluation.overall_score}/100
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className={`h-3 rounded-full ${
+                    evaluation.overall_score >= 80 ? 'bg-green-500' :
+                    evaluation.overall_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${evaluation.overall_score}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* 세부 점수 */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="text-center">
+                <div className="text-sm text-gray-600">내용 정확성</div>
+                <div className="text-lg font-semibold text-gray-800">{evaluation.content_accuracy}/100</div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm text-gray-600">질문 적합성</div>
+                <div className="text-lg font-semibold text-gray-800">{evaluation.question_relevance}/100</div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm text-gray-600">언어 사용</div>
+                <div className="text-lg font-semibold text-gray-800">{evaluation.language_usage}/100</div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm text-gray-600">완성도</div>
+                <div className="text-lg font-semibold text-gray-800">{evaluation.completeness}/100</div>
+              </div>
+            </div>
+
+            {/* 피드백 */}
+            <div className="space-y-3">
+              <div>
+                <h6 className="font-medium text-gray-700 mb-1">📝 교사 피드백</h6>
+                <p className="text-gray-600 text-sm">{evaluation.feedback}</p>
+              </div>
+
+              {evaluation.strengths.length > 0 && (
+                <div>
+                  <h6 className="font-medium text-green-700 mb-1">✅ 강점</h6>
+                  <ul className="text-sm text-gray-600">
+                    {evaluation.strengths.map((strength, index) => (
+                      <li key={index} className="flex items-start gap-1">
+                        <span className="text-green-500">•</span>
+                        {strength}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
               )}
+
+              {evaluation.areas_for_improvement.length > 0 && (
+                <div>
+                  <h6 className="font-medium text-orange-700 mb-1">🔧 개선 영역</h6>
+                  <ul className="text-sm text-gray-600">
+                    {evaluation.areas_for_improvement.map((area, index) => (
+                      <li key={index} className="flex items-start gap-1">
+                        <span className="text-orange-500">•</span>
+                        {area}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {evaluation.suggestions.length > 0 && (
+                <div>
+                  <h6 className="font-medium text-blue-700 mb-1">💡 제안사항</h6>
+                  <ul className="text-sm text-gray-600">
+                    {evaluation.suggestions.map((suggestion, index) => (
+                      <li key={index} className="flex items-start gap-1">
+                        <span className="text-blue-500">•</span>
+                        {suggestion}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 평가 중 표시 */}
+        {isEvaluating && (
+          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-blue-600 font-medium">AI가 답변을 평가하고 있습니다...</span>
             </div>
           </div>
         )}

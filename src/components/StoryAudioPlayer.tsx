@@ -133,6 +133,14 @@ export default function StoryAudioPlayer({
     }
   };
 
+  // 속도 변경 시 오디오 속도 즉시 적용
+  const handleSpeedChange = (newSpeed: number) => {
+    setCurrentSpeed(newSpeed);
+    if (audioRef.current && !audioRef.current.paused) {
+      audioRef.current.playbackRate = newSpeed;
+    }
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -198,7 +206,7 @@ export default function StoryAudioPlayer({
             max="2.0"
             step="0.1"
             value={currentSpeed}
-            onChange={(e) => setCurrentSpeed(parseFloat(e.target.value))}
+            onChange={(e) => handleSpeedChange(parseFloat(e.target.value))}
             className="flex-1"
           />
           <span className="text-sm text-gray-600 w-12">{currentSpeed.toFixed(1)}x</span>

@@ -158,6 +158,7 @@ export default function GeneratedContent({ data, token }: GeneratedContentProps)
             <RetellingActivity
               questions={data.teacher_script.after_reading}
               token={token}
+              storyContent={data.short_story.content}
             />
           </div>
         )}
