@@ -124,40 +124,43 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
         });
         const audioUrl = URL.createObjectURL(audioBlob);
         
-        // 현재 duration 값을 가져와서 사용
-        const currentDuration = recordingState.duration;
-        
-        setRecordingState(prev => ({
-          ...prev,
-          audioBlob,
-          audioUrl
-        }));
-        stream.getTracks().forEach(track => track.stop());
-        
-        console.log('Recording completed:', {
-          blobSize: audioBlob.size,
-          blobType: audioBlob.type,
-          duration: currentDuration,
-          chunksCount: audioChunksRef.current.length,
-          totalChunkSize: audioChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0)
+        // setState의 콜백을 사용해서 최신 duration 값을 가져옴
+        setRecordingState(prev => {
+          const currentDuration = prev.duration;
+          
+          console.log('Recording completed:', {
+            blobSize: audioBlob.size,
+            blobType: audioBlob.type,
+            duration: currentDuration,
+            chunksCount: audioChunksRef.current.length,
+            totalChunkSize: audioChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0)
+          });
+          
+          // 녹음 시간이 너무 짧으면 전사하지 않음
+          if (currentDuration < 1) {
+            setError('녹음 시간이 너무 짧습니다. 최소 1초 이상 녹음해주세요.');
+            return prev; // 상태 변경 없이 반환
+          }
+          
+          // 오디오 데이터가 실제로 있는지 확인
+          if (audioBlob.size < 1000) {
+            setError('녹음된 오디오 데이터가 부족합니다. 마이크가 제대로 작동하는지 확인해주세요.');
+            return prev; // 상태 변경 없이 반환
+          }
+          
+          // 녹음 완료 시 자동으로 전사 시작
+          setTimeout(() => {
+            transcribeAudio(audioBlob);
+          }, 1000);
+          
+          return {
+            ...prev,
+            audioBlob,
+            audioUrl
+          };
         });
         
-        // 녹음 시간이 너무 짧으면 전사하지 않음
-        if (currentDuration < 1) {
-          setError('녹음 시간이 너무 짧습니다. 최소 1초 이상 녹음해주세요.');
-          return;
-        }
-        
-        // 오디오 데이터가 실제로 있는지 확인
-        if (audioBlob.size < 1000) {
-          setError('녹음된 오디오 데이터가 부족합니다. 마이크가 제대로 작동하는지 확인해주세요.');
-          return;
-        }
-        
-        // 녹음 완료 시 자동으로 전사 시작
-        setTimeout(() => {
-          transcribeAudio(audioBlob);
-        }, 1000);
+        stream.getTracks().forEach(track => track.stop());
       };
 
       // MediaRecorder 시작 (시간 간격 설정)
