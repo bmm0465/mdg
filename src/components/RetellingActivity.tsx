@@ -63,7 +63,11 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
   useEffect(() => {
     if (recordingState.isRecording && !recordingState.isPaused) {
       intervalRef.current = setInterval(() => {
-        setRecordingState(prev => ({ ...prev, duration: prev.duration + 1 }));
+        setRecordingState(prev => {
+          const newDuration = prev.duration + 1;
+          console.log('Recording duration:', newDuration);
+          return { ...prev, duration: newDuration };
+        });
       }, 1000);
     } else {
       if (intervalRef.current) {
@@ -90,13 +94,25 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
           sampleRate: 44100
         }
       });
+      // 지원되는 MIME 타입 확인
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = 'audio/mp4';
+        }
+      }
+      
+      console.log('Using MIME type:', mimeType);
+      
       const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus' // 고품질 오디오 형식
+        mimeType: mimeType
       });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
+        console.log('Data available:', event.data.size, 'bytes');
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
@@ -104,9 +120,13 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
 
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { 
-          type: 'audio/webm;codecs=opus' 
+          type: mimeType
         });
         const audioUrl = URL.createObjectURL(audioBlob);
+        
+        // 현재 duration 값을 가져와서 사용
+        const currentDuration = recordingState.duration;
+        
         setRecordingState(prev => ({
           ...prev,
           audioBlob,
@@ -117,8 +137,22 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
         console.log('Recording completed:', {
           blobSize: audioBlob.size,
           blobType: audioBlob.type,
-          duration: recordingState.duration
+          duration: currentDuration,
+          chunksCount: audioChunksRef.current.length,
+          totalChunkSize: audioChunksRef.current.reduce((sum, chunk) => sum + chunk.size, 0)
         });
+        
+        // 녹음 시간이 너무 짧으면 전사하지 않음
+        if (currentDuration < 1) {
+          setError('녹음 시간이 너무 짧습니다. 최소 1초 이상 녹음해주세요.');
+          return;
+        }
+        
+        // 오디오 데이터가 실제로 있는지 확인
+        if (audioBlob.size < 1000) {
+          setError('녹음된 오디오 데이터가 부족합니다. 마이크가 제대로 작동하는지 확인해주세요.');
+          return;
+        }
         
         // 녹음 완료 시 자동으로 전사 시작
         setTimeout(() => {
@@ -126,7 +160,8 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
         }, 1000);
       };
 
-      mediaRecorder.start();
+      // MediaRecorder 시작 (시간 간격 설정)
+      mediaRecorder.start(100); // 100ms마다 데이터 수집
       setRecordingState(prev => ({
         ...prev,
         isRecording: true,
@@ -134,6 +169,8 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
         duration: 0
       }));
       setError(null);
+      
+      console.log('Recording started with MIME type:', mimeType);
     } catch (err) {
       console.error('녹음 시작 실패:', err);
       setError('마이크 접근 권한이 필요합니다.');

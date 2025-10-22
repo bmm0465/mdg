@@ -61,10 +61,19 @@ export async function POST(request: NextRequest) {
     });
 
     // 오디오 파일 형식 검증
-    const supportedTypes = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/webm', 'audio/ogg'];
+    const supportedTypes = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/webm', 'audio/ogg', 'audio/webm;codecs=opus'];
     if (!supportedTypes.includes(audioFile.type)) {
       console.warn('Unsupported audio type:', audioFile.type);
+      console.log('Supported types:', supportedTypes);
     }
+    
+    // 파일 크기 로깅
+    console.log('Audio file details:', {
+      name: audioFile.name,
+      size: audioFile.size,
+      type: audioFile.type,
+      lastModified: audioFile.lastModified
+    });
 
     try {
       // OpenAI Whisper API 호출
