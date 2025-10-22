@@ -88,16 +88,12 @@ export async function POST(request: NextRequest) {
         file: audioFile,
         model: "gpt-4o-transcribe", // GPT-4o-transcribe 모델 사용
         language: "en", // 영어로 제한
-        response_format: "verbose_json", // 상세한 응답 형식
-        timestamp_granularities: ["word"], // 단어별 타임스탬프
+        response_format: "json", // json 형식 (verbose_json은 지원 안함)
       });
 
       console.log('Transcription successful:', {
         text: transcription.text,
-        textLength: transcription.text.length,
-        duration: transcription.duration,
-        language: transcription.language,
-        wordsCount: transcription.words?.length || 0
+        textLength: transcription.text.length
       });
 
       // 빈 텍스트 체크
@@ -114,14 +110,9 @@ export async function POST(request: NextRequest) {
       const result = {
         text: transcription.text.trim(),
         confidence: 0.95, // GPT-4o-transcribe는 직접적인 confidence를 제공하지 않으므로 추정값 사용
-        words: transcription.words?.map(word => ({
-          word: word.word,
-          start: word.start,
-          end: word.end,
-          confidence: 0.9 // 단어별 신뢰도 추정값
-        })) || [],
-        duration: transcription.duration,
-        language: transcription.language
+        words: [], // json 형식에서는 단어별 정보 미제공
+        duration: 0, // json 형식에서는 duration 미제공
+        language: 'en'
       };
 
       // Supabase Storage에 음성 파일 저장 및 데이터베이스에 전사 결과 저장
@@ -161,9 +152,9 @@ export async function POST(request: NextRequest) {
             audio_file_size: audioFile.size,
             transcription_text: result.text,
             transcription_confidence: result.confidence,
-            transcription_duration: result.duration,
+            transcription_duration: null, // json 형식에서는 duration 미제공
             transcription_language: result.language,
-            words_data: result.words,
+            words_data: null, // json 형식에서는 단어별 정보 미제공
             created_at: new Date().toISOString()
           })
           .select()
