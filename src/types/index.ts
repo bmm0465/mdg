@@ -42,11 +42,54 @@ export interface TeacherScript {
   wrap_up: string[];
 }
 
+// 어휘 빈칸 채우기 활동 타입
+export interface VocabularyFillActivity {
+  modified_story: string;
+  blanks: {
+    id: string;
+    correct_answer: string;
+    type: string;
+    hint?: string;
+  }[];
+  word_bank: string[];
+}
+
+// 전체 다시 쓰기 활동 타입
+export interface FullRewriteActivity {
+  story_structure: {
+    setting: string;
+    characters: string;
+    problem: string;
+    events: string[];
+    resolution: string;
+    theme: string;
+  };
+  rewrite_guide: string;
+  story_grammar_rubric: {
+    setting: string[];
+    characters: string[];
+    problem: string[];
+    events: string[];
+    resolution: string[];
+    theme: string[];
+    vocabulary: string[];
+    grammar: string[];
+    coherence: string[];
+  };
+}
+
+// Rewrite 활동 타입
+export interface RewriteActivities {
+  vocabulary_fill: VocabularyFillActivity;
+  full_rewrite: FullRewriteActivity;
+}
+
 // 생성된 자료 타입
 export interface GeneratedData {
   unit: Unit;
   short_story: ShortStory;
   teacher_script: TeacherScript;
+  rewrite_activities?: RewriteActivities;
 }
 
 // API 응답 타입
