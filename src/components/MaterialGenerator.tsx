@@ -150,7 +150,12 @@ export default function MaterialGenerator() {
         </div>
       )}
 
-      {result && <GeneratedContent data={result} />}
+      {result && (
+        <GeneratedContent 
+          data={result} 
+          token={localStorage.getItem('access_token') || undefined}
+        />
+      )}
     </div>
   );
 }

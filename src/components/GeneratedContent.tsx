@@ -2,17 +2,20 @@
 
 import { useState } from 'react';
 import { GeneratedData } from '@/types';
+import StoryAudioPlayer from './StoryAudioPlayer';
 
 interface GeneratedContentProps {
   data: GeneratedData;
+  token?: string;
 }
 
-export default function GeneratedContent({ data }: GeneratedContentProps) {
+export default function GeneratedContent({ data, token }: GeneratedContentProps) {
   const [activeTab, setActiveTab] = useState('story');
 
   const tabs = [
     { id: 'story', label: 'Short Story', icon: '📖' },
     { id: 'script', label: 'Teacher Script', icon: '👩‍🏫' },
+    { id: 'rewrite', label: 'Rewrite Activities', icon: '✍️' },
     { id: 'unit', label: 'Unit Info', icon: '📚' }
   ];
 
@@ -41,9 +44,22 @@ export default function GeneratedContent({ data }: GeneratedContentProps) {
       <div className="bg-white rounded-lg p-6">
         {activeTab === 'story' && (
           <div>
-            <h4 className="text-lg font-semibold text-gray-800 mb-4">
-              📖 {data.short_story.title}
-            </h4>
+            <div className="flex justify-between items-start mb-4">
+              <h4 className="text-lg font-semibold text-gray-800">
+                📖 {data.short_story.title}
+              </h4>
+              {token && (
+                <div className="ml-4">
+                  <StoryAudioPlayer
+                    storyText={data.short_story.content}
+                    storyTitle={data.short_story.title}
+                    voice="nova"
+                    speed={1.0}
+                    token={token}
+                  />
+                </div>
+              )}
+            </div>
             <div className="prose max-w-none">
               <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                 {data.short_story.content}
@@ -119,6 +135,75 @@ export default function GeneratedContent({ data }: GeneratedContentProps) {
                   <li key={index}>{item}</li>
                 ))}
               </ul>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'rewrite' && data.rewrite_activities && (
+          <div className="space-y-6">
+            {/* Vocabulary Fill Activity */}
+            <div>
+              <h5 className="font-semibold text-gray-800 mb-3">📝 1단계: 어휘 빈칸 채우기</h5>
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-gray-700 leading-relaxed whitespace-pre-line mb-4">
+                  {data.rewrite_activities.vocabulary_fill.modified_story}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-sm font-medium text-gray-600">단어 은행:</span>
+                  {data.rewrite_activities.vocabulary_fill.word_bank.map((word, index) => (
+                    <span key={index} className="px-2 py-1 bg-white rounded border text-sm">
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Full Rewrite Activity */}
+            <div>
+              <h5 className="font-semibold text-gray-800 mb-3">✍️ 2단계: 전체 스토리 다시 쓰기</h5>
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="mb-4">
+                  <h6 className="font-medium text-gray-700 mb-2">📋 스토리 구조 분석</h6>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="font-medium">📍 배경:</span> {data.rewrite_activities.full_rewrite.story_structure.setting}
+                    </div>
+                    <div>
+                      <span className="font-medium">👥 등장인물:</span> {data.rewrite_activities.full_rewrite.story_structure.characters}
+                    </div>
+                    <div>
+                      <span className="font-medium">⚠️ 상황:</span> {data.rewrite_activities.full_rewrite.story_structure.problem}
+                    </div>
+                    <div>
+                      <span className="font-medium">💡 주제:</span> {data.rewrite_activities.full_rewrite.story_structure.theme}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <h6 className="font-medium text-gray-700 mb-2">📝 다시 쓰기 가이드</h6>
+                  <div className="bg-white p-3 rounded border text-sm text-gray-700 whitespace-pre-line">
+                    {data.rewrite_activities.full_rewrite.rewrite_guide}
+                  </div>
+                </div>
+
+                <div>
+                  <h6 className="font-medium text-gray-700 mb-2">📊 Story Grammar 루브릭 (9개 영역, 0-4점 척도)</h6>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                    {Object.entries(data.rewrite_activities.full_rewrite.story_grammar_rubric).map(([key, criteria]) => (
+                      <div key={key} className="bg-white p-2 rounded border">
+                        <div className="font-medium text-gray-600 mb-1 capitalize">{key}</div>
+                        <ul className="space-y-1">
+                          {criteria.map((criterion, index) => (
+                            <li key={index} className="text-gray-600">• {criterion}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
