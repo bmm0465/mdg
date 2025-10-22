@@ -124,18 +124,39 @@ export async function POST(request: NextRequest) {
         language: transcription.language
       };
 
-      // Supabase에 음성 파일과 전사 결과 저장
+      // Supabase Storage에 음성 파일 저장 및 데이터베이스에 전사 결과 저장
       try {
-        // 오디오 파일을 Base64로 변환
+        // 오디오 파일을 Buffer로 변환
         const audioBuffer = await audioFile.arrayBuffer();
-        const audioBase64 = Buffer.from(audioBuffer).toString('base64');
+        const buffer = Buffer.from(audioBuffer);
         
-        // 데이터베이스에 저장
+        // Supabase Storage에 업로드
+        const timestamp = new Date().getTime();
+        const fileExtension = audioFile.type.includes('webm') ? 'webm' : 
+                             audioFile.type.includes('mp3') ? 'mp3' : 
+                             audioFile.type.includes('wav') ? 'wav' : 'audio';
+        const fileName = `recordings/recording_${timestamp}.${fileExtension}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('audio-files')
+          .upload(fileName, buffer, {
+            contentType: audioFile.type,
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Supabase Storage 업로드 오류:', uploadError);
+          // Storage 업로드 실패해도 DB에는 저장 시도
+        } else {
+          console.log('Supabase Storage 업로드 성공:', uploadData.path);
+        }
+        
+        // 데이터베이스에 전사 결과 저장
         const { data: dbResult, error: dbError } = await supabase
           .from('transcriptions')
           .insert({
             user_id: token, // 인증 토큰을 user_id로 사용
-            audio_file: audioBase64,
+            file_path: uploadData?.path || null, // Storage 경로
             audio_file_type: audioFile.type,
             audio_file_size: audioFile.size,
             transcription_text: result.text,
@@ -149,10 +170,10 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (dbError) {
-          console.error('Supabase 저장 오류:', dbError);
+          console.error('Supabase DB 저장 오류:', dbError);
           // DB 저장 실패해도 전사 결과는 반환
         } else {
-          console.log('Supabase 저장 성공:', dbResult.id);
+          console.log('Supabase DB 저장 성공:', dbResult.id);
         }
       } catch (saveError) {
         console.error('데이터 저장 중 오류:', saveError);
