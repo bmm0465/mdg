@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Play, Pause, Square, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mic, Play, Pause, Square, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface RetellingActivityProps {
   questions: string[];
@@ -368,7 +368,7 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
                 재생
               </button>
               <button
-                onClick={transcribeAudio}
+                onClick={() => transcribeAudio()}
                 disabled={isTranscribing}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
