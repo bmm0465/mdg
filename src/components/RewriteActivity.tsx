@@ -225,123 +225,127 @@ export default function RewriteActivity({
     </div>
   );
 
-  const renderEvaluation = () => (
-    <div className="space-y-6">
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
-          <CheckCircle className="w-5 h-5" />
-          AI 평가 결과
-        </h3>
-      </div>
-      
-      {/* 전체 점수 */}
-      <div className="bg-white border rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-lg font-medium text-gray-700">전체 점수</span>
-          <span className={`text-3xl font-bold ${
-            evaluation.overall_score >= 80 ? 'text-green-600' :
-            evaluation.overall_score >= 60 ? 'text-yellow-600' : 'text-red-600'
-          }`}>
-            {evaluation.overall_score}/100
-          </span>
+  const renderEvaluation = () => {
+    if (!evaluation) return null;
+    
+    return (
+      <div className="space-y-6">
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h3 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+            <CheckCircle className="w-5 h-5" />
+            AI 평가 결과
+          </h3>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-4">
-          <div 
-            className={`h-4 rounded-full ${
-              evaluation.overall_score >= 80 ? 'bg-green-500' :
-              evaluation.overall_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-            }`}
-            style={{ width: `${evaluation.overall_score}%` }}
-          ></div>
-        </div>
-      </div>
-
-      {/* 세부 점수 */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white border rounded-lg p-4 text-center">
-          <div className="text-sm text-gray-600">내용 정확성</div>
-          <div className="text-2xl font-semibold text-gray-800">{evaluation.content_accuracy}/100</div>
-        </div>
-        <div className="bg-white border rounded-lg p-4 text-center">
-          <div className="text-sm text-gray-600">언어 사용</div>
-          <div className="text-2xl font-semibold text-gray-800">{evaluation.language_usage}/100</div>
-        </div>
-        <div className="bg-white border rounded-lg p-4 text-center">
-          <div className="text-sm text-gray-600">완성도</div>
-          <div className="text-2xl font-semibold text-gray-800">{evaluation.completeness}/100</div>
-        </div>
-        <div className="bg-white border rounded-lg p-4 text-center">
-          <div className="text-sm text-gray-600">창의성</div>
-          <div className="text-2xl font-semibold text-gray-800">{evaluation.question_relevance}/100</div>
-        </div>
-      </div>
-
-      {/* 피드백 */}
-      <div className="space-y-4">
-        <div className="bg-white border rounded-lg p-4">
-          <h5 className="font-medium text-gray-700 mb-2">📝 교사 피드백</h5>
-          <p className="text-gray-600">{evaluation.feedback}</p>
-        </div>
-
-        {evaluation.strengths.length > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h5 className="font-medium text-green-700 mb-2">✅ 강점</h5>
-            <ul className="text-sm text-green-600">
-              {evaluation.strengths.map((strength, index) => (
-                <li key={index} className="flex items-start gap-1">
-                  <span className="text-green-500">•</span>
-                  {strength}
-                </li>
-              ))}
-            </ul>
+        
+        {/* 전체 점수 */}
+        <div className="bg-white border rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-lg font-medium text-gray-700">전체 점수</span>
+            <span className={`text-3xl font-bold ${
+              evaluation.overall_score >= 80 ? 'text-green-600' :
+              evaluation.overall_score >= 60 ? 'text-yellow-600' : 'text-red-600'
+            }`}>
+              {evaluation.overall_score}/100
+            </span>
           </div>
-        )}
-
-        {evaluation.areas_for_improvement.length > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <h5 className="font-medium text-orange-700 mb-2">🔧 개선 영역</h5>
-            <ul className="text-sm text-orange-600">
-              {evaluation.areas_for_improvement.map((area, index) => (
-                <li key={index} className="flex items-start gap-1">
-                  <span className="text-orange-500">•</span>
-                  {area}
-                </li>
-              ))}
-            </ul>
+          <div className="w-full bg-gray-200 rounded-full h-4">
+            <div 
+              className={`h-4 rounded-full ${
+                evaluation.overall_score >= 80 ? 'bg-green-500' :
+                evaluation.overall_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}
+              style={{ width: `${evaluation.overall_score}%` }}
+            ></div>
           </div>
-        )}
+        </div>
 
-        {evaluation.suggestions.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h5 className="font-medium text-blue-700 mb-2">💡 제안사항</h5>
-            <ul className="text-sm text-blue-600">
-              {evaluation.suggestions.map((suggestion, index) => (
-                <li key={index} className="flex items-start gap-1">
-                  <span className="text-blue-500">•</span>
-                  {suggestion}
-                </li>
-              ))}
-            </ul>
+        {/* 세부 점수 */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white border rounded-lg p-4 text-center">
+            <div className="text-sm text-gray-600">내용 정확성</div>
+            <div className="text-2xl font-semibold text-gray-800">{evaluation.content_accuracy}/100</div>
           </div>
-        )}
-      </div>
+          <div className="bg-white border rounded-lg p-4 text-center">
+            <div className="text-sm text-gray-600">언어 사용</div>
+            <div className="text-2xl font-semibold text-gray-800">{evaluation.language_usage}/100</div>
+          </div>
+          <div className="bg-white border rounded-lg p-4 text-center">
+            <div className="text-sm text-gray-600">완성도</div>
+            <div className="text-2xl font-semibold text-gray-800">{evaluation.completeness}/100</div>
+          </div>
+          <div className="bg-white border rounded-lg p-4 text-center">
+            <div className="text-sm text-gray-600">창의성</div>
+            <div className="text-2xl font-semibold text-gray-800">{evaluation.question_relevance}/100</div>
+          </div>
+        </div>
 
-      <div className="flex justify-center">
-        <button
-          onClick={() => {
-            setCurrentStep(1);
-            setVocabularyAnswers({});
-            setRewriteText('');
-            setEvaluation(null);
-            setError(null);
-          }}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          다시 시작하기
-        </button>
+        {/* 피드백 */}
+        <div className="space-y-4">
+          <div className="bg-white border rounded-lg p-4">
+            <h5 className="font-medium text-gray-700 mb-2">📝 교사 피드백</h5>
+            <p className="text-gray-600">{evaluation.feedback}</p>
+          </div>
+
+          {evaluation.strengths.length > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h5 className="font-medium text-green-700 mb-2">✅ 강점</h5>
+              <ul className="text-sm text-green-600">
+                {evaluation.strengths.map((strength, index) => (
+                  <li key={index} className="flex items-start gap-1">
+                    <span className="text-green-500">•</span>
+                    {strength}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {evaluation.areas_for_improvement.length > 0 && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <h5 className="font-medium text-orange-700 mb-2">🔧 개선 영역</h5>
+              <ul className="text-sm text-orange-600">
+                {evaluation.areas_for_improvement.map((area, index) => (
+                  <li key={index} className="flex items-start gap-1">
+                    <span className="text-orange-500">•</span>
+                    {area}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {evaluation.suggestions.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h5 className="font-medium text-blue-700 mb-2">💡 제안사항</h5>
+              <ul className="text-sm text-blue-600">
+                {evaluation.suggestions.map((suggestion, index) => (
+                  <li key={index} className="flex items-start gap-1">
+                    <span className="text-blue-500">•</span>
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-center">
+          <button
+            onClick={() => {
+              setCurrentStep(1);
+              setVocabularyAnswers({});
+              setRewriteText('');
+              setEvaluation(null);
+              setError(null);
+            }}
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            다시 시작하기
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
