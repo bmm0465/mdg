@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { GeneratedData } from '@/types';
 import StoryAudioPlayer from './StoryAudioPlayer';
 import RetellingActivity from './RetellingActivity';
+import RewriteActivity from './RewriteActivity';
 
 interface GeneratedContentProps {
   data: GeneratedData;
@@ -163,72 +164,24 @@ export default function GeneratedContent({ data, token }: GeneratedContentProps)
           </div>
         )}
 
-        {activeTab === 'rewrite' && data.rewrite_activities && (
-          <div className="space-y-6">
-            {/* Vocabulary Fill Activity */}
-            <div>
-              <h5 className="font-semibold text-gray-800 mb-3">📝 1단계: 어휘 빈칸 채우기</h5>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line mb-4">
-                  {data.rewrite_activities.vocabulary_fill.modified_story}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-sm font-medium text-gray-600">단어 은행:</span>
-                  {data.rewrite_activities.vocabulary_fill.word_bank.map((word, index) => (
-                    <span key={index} className="px-2 py-1 bg-white rounded border text-sm">
-                      {word}
-                    </span>
-                  ))}
-                </div>
-              </div>
+        {activeTab === 'rewrite' && (
+          <div>
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">
+              ✍️ Rewrite Activities
+            </h4>
+            <div className="bg-yellow-50 p-4 rounded-lg mb-4">
+              <p className="text-gray-700 mb-2">
+                <strong>활동 설명:</strong> 1단계에서 어휘를 학습하고, 2단계에서 스토리를 다시 써보세요.
+              </p>
+              <p className="text-sm text-gray-600">
+                AI가 자동으로 평가하여 피드백을 제공해드립니다.
+              </p>
             </div>
-
-            {/* Full Rewrite Activity */}
-            <div>
-              <h5 className="font-semibold text-gray-800 mb-3">✍️ 2단계: 전체 스토리 다시 쓰기</h5>
-              <div className="bg-green-50 p-4 rounded-lg">
-                <div className="mb-4">
-                  <h6 className="font-medium text-gray-700 mb-2">📋 스토리 구조 분석</h6>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="font-medium">📍 배경:</span> {data.rewrite_activities.full_rewrite.story_structure.setting}
-                    </div>
-                    <div>
-                      <span className="font-medium">👥 등장인물:</span> {data.rewrite_activities.full_rewrite.story_structure.characters}
-                    </div>
-                    <div>
-                      <span className="font-medium">⚠️ 상황:</span> {data.rewrite_activities.full_rewrite.story_structure.problem}
-                    </div>
-                    <div>
-                      <span className="font-medium">💡 주제:</span> {data.rewrite_activities.full_rewrite.story_structure.theme}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="mb-4">
-                  <h6 className="font-medium text-gray-700 mb-2">📝 다시 쓰기 가이드</h6>
-                  <div className="bg-white p-3 rounded border text-sm text-gray-700 whitespace-pre-line">
-                    {data.rewrite_activities.full_rewrite.rewrite_guide}
-                  </div>
-                </div>
-
-                <div>
-                  <h6 className="font-medium text-gray-700 mb-2">📊 Story Grammar 루브릭 (9개 영역, 0-4점 척도)</h6>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                    {Object.entries(data.rewrite_activities.full_rewrite.story_grammar_rubric).map(([key, criteria]) => (
-                      <div key={key} className="bg-white p-2 rounded border">
-                        <div className="font-medium text-gray-600 mb-1 capitalize">{key}</div>
-                        <ul className="space-y-1">
-                          {criteria.map((criterion, index) => (
-                            <li key={index} className="text-gray-600">• {criterion}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <RewriteActivity
+              storyContent={data.short_story.content}
+              vocabularyWords={data.unit.target_vocabulary}
+              token={token}
+            />
           </div>
         )}
 
