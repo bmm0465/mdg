@@ -9,18 +9,21 @@ interface StoryAudioPlayerProps {
   voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
   speed?: number;
   token?: string;
+  showSpeedControl?: boolean;
 }
 
 export default function StoryAudioPlayer({
   storyText,
   voice = 'nova',
-  speed = 1.0,
-  token
+  speed: initialSpeed = 1.0,
+  token,
+  showSpeedControl = false
 }: StoryAudioPlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [currentSpeed, setCurrentSpeed] = useState(initialSpeed);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // 컴포넌트 언마운트 시 오디오 URL 정리
@@ -77,7 +80,7 @@ export default function StoryAudioPlayer({
         body: JSON.stringify({
           text: storyText,
           voice: voice,
-          speed: speed,
+          speed: currentSpeed,
         }),
       });
 
@@ -185,11 +188,28 @@ export default function StoryAudioPlayer({
       {/* 숨겨진 오디오 엘리먼트 */}
       <audio ref={audioRef} className="hidden" />
 
+      {/* 속도 조절 */}
+      {showSpeedControl && (
+        <div className="flex items-center gap-2 mt-2">
+          <label className="text-sm text-gray-600">속도:</label>
+          <input
+            type="range"
+            min="0.5"
+            max="2.0"
+            step="0.1"
+            value={currentSpeed}
+            onChange={(e) => setCurrentSpeed(parseFloat(e.target.value))}
+            className="flex-1"
+          />
+          <span className="text-sm text-gray-600 w-12">{currentSpeed.toFixed(1)}x</span>
+        </div>
+      )}
+
       {/* 추가 정보 */}
       {audioUrl && (
         <div className="text-xs text-gray-500">
           음성: {voice === 'nova' ? 'Nova (여성)' : voice === 'shimmer' ? 'Shimmer (여성)' : voice.charAt(0).toUpperCase() + voice.slice(1)} | 
-          속도: {speed}x
+          속도: {currentSpeed}x
         </div>
       )}
     </div>

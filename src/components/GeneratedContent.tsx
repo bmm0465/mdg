@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { GeneratedData } from '@/types';
 import StoryAudioPlayer from './StoryAudioPlayer';
+import RetellingActivity from './RetellingActivity';
 
 interface GeneratedContentProps {
   data: GeneratedData;
@@ -15,6 +16,7 @@ export default function GeneratedContent({ data, token }: GeneratedContentProps)
   const tabs = [
     { id: 'story', label: 'Short Story', icon: '📖' },
     { id: 'script', label: 'Teacher Script', icon: '👩‍🏫' },
+    { id: 'retelling', label: 'Retelling Activity', icon: '🎤' },
     { id: 'rewrite', label: 'Rewrite Activities', icon: '✍️' },
     { id: 'unit', label: 'Unit Info', icon: '📚' }
   ];
@@ -56,6 +58,7 @@ export default function GeneratedContent({ data, token }: GeneratedContentProps)
                     voice="nova"
                     speed={1.0}
                     token={token}
+                    showSpeedControl={true}
                   />
                 </div>
               )}
@@ -136,6 +139,26 @@ export default function GeneratedContent({ data, token }: GeneratedContentProps)
                 ))}
               </ul>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'retelling' && (
+          <div>
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">
+              🎤 Retelling Activity
+            </h4>
+            <div className="bg-yellow-50 p-4 rounded-lg mb-4">
+              <p className="text-gray-700 mb-2">
+                <strong>활동 설명:</strong> 교사의 질문에 답하면서 스토리를 다시 확인해보세요.
+              </p>
+              <p className="text-sm text-gray-600">
+                마이크를 사용하여 답변을 녹음하고, AI가 자동으로 전사하여 평가해드립니다.
+              </p>
+            </div>
+            <RetellingActivity
+              questions={data.teacher_script.after_reading}
+              token={token}
+            />
           </div>
         )}
 
