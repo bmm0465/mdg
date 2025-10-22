@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
 
 // OpenAI 클라이언트 초기화
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Supabase 클라이언트 초기화
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!
+);
 
 // 간단한 인증 체크 함수
 function checkAuth(request: NextRequest) {
@@ -143,6 +150,40 @@ export async function POST(request: NextRequest) {
           strengths: ["답변을 시도했습니다"],
           areas_for_improvement: ["답변의 완성도를 높여보세요"]
         };
+      }
+
+      // Supabase에 평가 결과 저장
+      try {
+        const { data: dbResult, error: dbError } = await supabase
+          .from('evaluations')
+          .insert({
+            user_id: token,
+            question: question,
+            student_answer: studentAnswer,
+            story_content: storyContent,
+            overall_score: evaluationResult.overall_score,
+            content_accuracy: evaluationResult.content_accuracy,
+            question_relevance: evaluationResult.question_relevance,
+            language_usage: evaluationResult.language_usage,
+            completeness: evaluationResult.completeness,
+            feedback: evaluationResult.feedback,
+            suggestions: evaluationResult.suggestions,
+            strengths: evaluationResult.strengths,
+            areas_for_improvement: evaluationResult.areas_for_improvement,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (dbError) {
+          console.error('Supabase 평가 저장 오류:', dbError);
+          // DB 저장 실패해도 평가 결과는 반환
+        } else {
+          console.log('Supabase 평가 저장 성공:', dbResult.id);
+        }
+      } catch (saveError) {
+        console.error('평가 데이터 저장 중 오류:', saveError);
+        // 저장 실패해도 평가 결과는 반환
       }
 
       return NextResponse.json({
