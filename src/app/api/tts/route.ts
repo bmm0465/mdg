@@ -86,26 +86,31 @@ export async function POST(request: NextRequest) {
         },
       });
 
-    } catch (ttsError: any) {
+    } catch (ttsError) {
       console.error('OpenAI TTS API 오류:', ttsError);
+      
+      const errorMessage = ttsError instanceof Error ? ttsError.message : 'Unknown error';
       
       return NextResponse.json(
         { 
           success: false, 
           error: 'TTS 생성 중 오류가 발생했습니다.',
-          details: ttsError.message 
+          details: errorMessage 
         },
         { status: 500 }
       );
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('TTS error:', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     return NextResponse.json(
       { 
         success: false, 
         error: 'TTS 생성 중 오류가 발생했습니다.',
-        details: error.message 
+        details: errorMessage 
       },
       { status: 500 }
     );
@@ -163,7 +168,7 @@ export async function GET(request: NextRequest) {
       // OpenAI TTS API 호출
       const mp3 = await openai.audio.speech.create({
         model: "tts-1-hd", // 고품질 모델 사용
-        voice: voice as any,
+        voice: voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer',
         input: text,
         speed: speed,
       });
@@ -186,26 +191,31 @@ export async function GET(request: NextRequest) {
         },
       });
 
-    } catch (ttsError: any) {
+    } catch (ttsError) {
       console.error('OpenAI TTS API 오류 (GET):', ttsError);
+      
+      const errorMessage = ttsError instanceof Error ? ttsError.message : 'Unknown error';
       
       return NextResponse.json(
         { 
           success: false, 
           error: 'TTS 생성 중 오류가 발생했습니다.',
-          details: ttsError.message 
+          details: errorMessage 
         },
         { status: 500 }
       );
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('TTS error (GET):', error);
+    
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
     return NextResponse.json(
       { 
         success: false, 
         error: 'TTS 생성 중 오류가 발생했습니다.',
-        details: error.message 
+        details: errorMessage 
       },
       { status: 500 }
     );

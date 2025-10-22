@@ -13,7 +13,6 @@ interface StoryAudioPlayerProps {
 
 export default function StoryAudioPlayer({
   storyText,
-  storyTitle = 'Story',
   voice = 'nova',
   speed = 1.0,
   token
@@ -57,7 +56,7 @@ export default function StoryAudioPlayer({
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [audioRef.current]);
+  }, []);
 
   const generateAudio = async () => {
     if (!token) {
@@ -104,9 +103,10 @@ export default function StoryAudioPlayer({
         audioRef.current.src = newAudioUrl;
         audioRef.current.play();
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('TTS 생성 오류:', err);
-      setError(err.message || '오디오 생성 중 오류가 발생했습니다.');
+      const errorMessage = err instanceof Error ? err.message : '오디오 생성 중 오류가 발생했습니다.';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
