@@ -60,6 +60,12 @@ export async function POST(request: NextRequest) {
       fileType: audioFile.type
     });
 
+    // 오디오 파일 형식 검증
+    const supportedTypes = ['audio/wav', 'audio/mpeg', 'audio/mp3', 'audio/webm', 'audio/ogg'];
+    if (!supportedTypes.includes(audioFile.type)) {
+      console.warn('Unsupported audio type:', audioFile.type);
+    }
+
     try {
       // OpenAI Whisper API 호출
       const transcription = await openai.audio.transcriptions.create({
@@ -71,14 +77,26 @@ export async function POST(request: NextRequest) {
       });
 
       console.log('Transcription successful:', {
-        text: transcription.text.substring(0, 100) + '...',
+        text: transcription.text,
+        textLength: transcription.text.length,
         duration: transcription.duration,
-        language: transcription.language
+        language: transcription.language,
+        wordsCount: transcription.words?.length || 0
       });
+
+      // 빈 텍스트 체크
+      if (!transcription.text || transcription.text.trim().length === 0) {
+        console.warn('Empty transcription result');
+        return NextResponse.json({
+          success: false,
+          error: '음성을 인식할 수 없습니다. 더 명확하게 말씀해주세요.',
+          details: 'Transcription returned empty text'
+        }, { status: 400 });
+      }
 
       // 응답 데이터 구성
       const result = {
-        text: transcription.text,
+        text: transcription.text.trim(),
         confidence: 0.95, // Whisper는 직접적인 confidence를 제공하지 않으므로 추정값 사용
         words: transcription.words?.map(word => ({
           word: word.word,

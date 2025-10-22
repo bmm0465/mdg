@@ -82,8 +82,17 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
   // 녹음 시작
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 44100
+        }
+      });
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus' // 고품질 오디오 형식
+      });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -94,7 +103,9 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+        const audioBlob = new Blob(audioChunksRef.current, { 
+          type: 'audio/webm;codecs=opus' 
+        });
         const audioUrl = URL.createObjectURL(audioBlob);
         setRecordingState(prev => ({
           ...prev,
@@ -102,6 +113,12 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
           audioUrl
         }));
         stream.getTracks().forEach(track => track.stop());
+        
+        console.log('Recording completed:', {
+          blobSize: audioBlob.size,
+          blobType: audioBlob.type,
+          duration: recordingState.duration
+        });
         
         // 녹음 완료 시 자동으로 전사 시작
         setTimeout(() => {
@@ -164,12 +181,23 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
       return;
     }
 
+    // 오디오 파일 크기 체크
+    if (audioToTranscribe.size < 1000) { // 1KB 미만
+      setError('녹음 시간이 너무 짧습니다. 더 길게 말씀해주세요.');
+      return;
+    }
+
+    console.log('Starting transcription:', {
+      blobSize: audioToTranscribe.size,
+      blobType: audioToTranscribe.type
+    });
+
     setIsTranscribing(true);
     setError(null);
 
     try {
       const formData = new FormData();
-      formData.append('audio', audioToTranscribe, 'recording.wav');
+      formData.append('audio', audioToTranscribe, 'recording.webm');
 
       const response = await fetch('/api/transcribe', {
         method: 'POST',
@@ -185,6 +213,21 @@ export default function RetellingActivity({ questions, token, storyContent }: Re
       }
 
       const result = await response.json();
+      
+      console.log('Transcription response:', {
+        success: result.success,
+        text: result.data?.text,
+        textLength: result.data?.text?.length || 0
+      });
+      
+      if (!result.success) {
+        throw new Error(result.error || '전사에 실패했습니다.');
+      }
+      
+      if (!result.data || !result.data.text || result.data.text.trim().length === 0) {
+        throw new Error('음성을 인식할 수 없습니다. 더 명확하게 말씀해주세요.');
+      }
+      
       setTranscription(result.data);
       
       // 전사 완료 후 자동으로 평가 시작
