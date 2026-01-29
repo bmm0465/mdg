@@ -7,11 +7,16 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Supabase 클라이언트 초기화
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+// Supabase 클라이언트 초기화 (환경 변수가 있을 때만)
+function getSupabaseClient() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    return null;
+  }
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+  );
+}
 
 // 간단한 인증 체크 함수
 function checkAuth(request: NextRequest) {
@@ -117,18 +122,20 @@ export async function POST(request: NextRequest) {
 
       // Supabase Storage에 음성 파일 저장 및 데이터베이스에 전사 결과 저장
       try {
-        // 오디오 파일을 Buffer로 변환
-        const audioBuffer = await audioFile.arrayBuffer();
-        const buffer = Buffer.from(audioBuffer);
-        
-        // Supabase Storage에 업로드
-        const timestamp = new Date().getTime();
-        const fileExtension = audioFile.type.includes('webm') ? 'webm' : 
-                             audioFile.type.includes('mp3') ? 'mp3' : 
-                             audioFile.type.includes('wav') ? 'wav' : 'audio';
-        const fileName = `recordings/recording_${timestamp}.${fileExtension}`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          // 오디오 파일을 Buffer로 변환
+          const audioBuffer = await audioFile.arrayBuffer();
+          const buffer = Buffer.from(audioBuffer);
+          
+          // Supabase Storage에 업로드
+          const timestamp = new Date().getTime();
+          const fileExtension = audioFile.type.includes('webm') ? 'webm' : 
+                               audioFile.type.includes('mp3') ? 'mp3' : 
+                               audioFile.type.includes('wav') ? 'wav' : 'audio';
+          const fileName = `recordings/recording_${timestamp}.${fileExtension}`;
+          
+          const { data: uploadData, error: uploadError } = await supabase.storage
           .from('audio-files')
           .upload(fileName, buffer, {
             contentType: audioFile.type,
@@ -144,27 +151,28 @@ export async function POST(request: NextRequest) {
         
         // 데이터베이스에 전사 결과 저장
         const { data: dbResult, error: dbError } = await supabase
-          .from('transcriptions')
-          .insert({
-            user_id: token, // 인증 토큰을 user_id로 사용
-            file_path: uploadData?.path || null, // Storage 경로
-            audio_file_type: audioFile.type,
-            audio_file_size: audioFile.size,
-            transcription_text: result.text,
-            transcription_confidence: result.confidence,
-            transcription_duration: null, // json 형식에서는 duration 미제공
-            transcription_language: result.language,
-            words_data: null, // json 형식에서는 단어별 정보 미제공
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
+            .from('transcriptions')
+            .insert({
+              user_id: token, // 인증 토큰을 user_id로 사용
+              file_path: uploadData?.path || null, // Storage 경로
+              audio_file_type: audioFile.type,
+              audio_file_size: audioFile.size,
+              transcription_text: result.text,
+              transcription_confidence: result.confidence,
+              transcription_duration: null, // json 형식에서는 duration 미제공
+              transcription_language: result.language,
+              words_data: null, // json 형식에서는 단어별 정보 미제공
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
 
-        if (dbError) {
-          console.error('Supabase DB 저장 오류:', dbError);
-          // DB 저장 실패해도 전사 결과는 반환
-        } else {
-          console.log('Supabase DB 저장 성공:', dbResult.id);
+          if (dbError) {
+            console.error('Supabase DB 저장 오류:', dbError);
+            // DB 저장 실패해도 전사 결과는 반환
+          } else {
+            console.log('Supabase DB 저장 성공:', dbResult.id);
+          }
         }
       } catch (saveError) {
         console.error('데이터 저장 중 오류:', saveError);

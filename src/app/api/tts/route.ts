@@ -7,11 +7,16 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Supabase 클라이언트 초기화
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+// Supabase 클라이언트 초기화 (환경 변수가 있을 때만)
+function getSupabaseClient() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    return null;
+  }
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+  );
+}
 
 // 간단한 인증 체크 함수
 function checkAuth(request: NextRequest) {
@@ -85,36 +90,39 @@ export async function POST(request: NextRequest) {
 
       // Supabase Storage에 TTS 오디오 저장
       try {
-        const timestamp = new Date().getTime();
-        const fileName = `tts/story_${timestamp}_${voice}.mp3`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('audio-files')
-          .upload(fileName, buffer, {
-            contentType: 'audio/mpeg',
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('Supabase Storage 업로드 오류:', uploadError);
-        } else {
-          console.log('Supabase Storage 업로드 성공:', uploadData.path);
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const timestamp = new Date().getTime();
+          const fileName = `tts/story_${timestamp}_${voice}.mp3`;
           
-          // 데이터베이스에 메타데이터 저장
-          const { error: dbError } = await supabase
-            .from('tts_files')
-            .insert({
-              user_id: token,
-              file_path: uploadData.path,
-              voice: voice,
-              speed: speed,
-              text_length: text.length,
-              file_size: buffer.length,
-              created_at: new Date().toISOString()
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('audio-files')
+            .upload(fileName, buffer, {
+              contentType: 'audio/mpeg',
+              upsert: false
             });
-          
-          if (dbError) {
-            console.error('TTS 메타데이터 저장 오류:', dbError);
+
+          if (uploadError) {
+            console.error('Supabase Storage 업로드 오류:', uploadError);
+          } else {
+            console.log('Supabase Storage 업로드 성공:', uploadData.path);
+            
+            // 데이터베이스에 메타데이터 저장
+            const { error: dbError } = await supabase
+              .from('tts_files')
+              .insert({
+                user_id: token,
+                file_path: uploadData.path,
+                voice: voice,
+                speed: speed,
+                text_length: text.length,
+                file_size: buffer.length,
+                created_at: new Date().toISOString()
+              });
+            
+            if (dbError) {
+              console.error('TTS 메타데이터 저장 오류:', dbError);
+            }
           }
         }
       } catch (storageError) {
@@ -229,36 +237,39 @@ export async function GET(request: NextRequest) {
 
       // Supabase Storage에 TTS 오디오 저장
       try {
-        const timestamp = new Date().getTime();
-        const fileName = `tts/story_${timestamp}_${voice}.mp3`;
-        
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('audio-files')
-          .upload(fileName, buffer, {
-            contentType: 'audio/mpeg',
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('Supabase Storage 업로드 오류 (GET):', uploadError);
-        } else {
-          console.log('Supabase Storage 업로드 성공 (GET):', uploadData.path);
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const timestamp = new Date().getTime();
+          const fileName = `tts/story_${timestamp}_${voice}.mp3`;
           
-          // 데이터베이스에 메타데이터 저장
-          const { error: dbError } = await supabase
-            .from('tts_files')
-            .insert({
-              user_id: token,
-              file_path: uploadData.path,
-              voice: voice,
-              speed: speed,
-              text_length: text.length,
-              file_size: buffer.length,
-              created_at: new Date().toISOString()
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('audio-files')
+            .upload(fileName, buffer, {
+              contentType: 'audio/mpeg',
+              upsert: false
             });
-          
-          if (dbError) {
-            console.error('TTS 메타데이터 저장 오류 (GET):', dbError);
+
+          if (uploadError) {
+            console.error('Supabase Storage 업로드 오류 (GET):', uploadError);
+          } else {
+            console.log('Supabase Storage 업로드 성공 (GET):', uploadData.path);
+            
+            // 데이터베이스에 메타데이터 저장
+            const { error: dbError } = await supabase
+              .from('tts_files')
+              .insert({
+                user_id: token,
+                file_path: uploadData.path,
+                voice: voice,
+                speed: speed,
+                text_length: text.length,
+                file_size: buffer.length,
+                created_at: new Date().toISOString()
+              });
+            
+            if (dbError) {
+              console.error('TTS 메타데이터 저장 오류 (GET):', dbError);
+            }
           }
         }
       } catch (storageError) {

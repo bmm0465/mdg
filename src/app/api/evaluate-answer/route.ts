@@ -7,11 +7,16 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Supabase 클라이언트 초기화
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+// Supabase 클라이언트 초기화 (환경 변수가 있을 때만)
+function getSupabaseClient() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    return null;
+  }
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+  );
+}
 
 // 간단한 인증 체크 함수
 function checkAuth(request: NextRequest) {
@@ -154,9 +159,11 @@ export async function POST(request: NextRequest) {
 
       // Supabase에 평가 결과 저장
       try {
-        const { data: dbResult, error: dbError } = await supabase
-          .from('evaluations')
-          .insert({
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          const { data: dbResult, error: dbError } = await supabase
+            .from('evaluations')
+            .insert({
             user_id: token,
             question: question,
             student_answer: studentAnswer,
@@ -170,16 +177,17 @@ export async function POST(request: NextRequest) {
             suggestions: evaluationResult.suggestions,
             strengths: evaluationResult.strengths,
             areas_for_improvement: evaluationResult.areas_for_improvement,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
+              created_at: new Date().toISOString()
+            })
+            .select()
+            .single();
 
-        if (dbError) {
-          console.error('Supabase 평가 저장 오류:', dbError);
-          // DB 저장 실패해도 평가 결과는 반환
-        } else {
-          console.log('Supabase 평가 저장 성공:', dbResult.id);
+          if (dbError) {
+            console.error('Supabase 평가 저장 오류:', dbError);
+            // DB 저장 실패해도 평가 결과는 반환
+          } else {
+            console.log('Supabase 평가 저장 성공:', dbResult.id);
+          }
         }
       } catch (saveError) {
         console.error('평가 데이터 저장 중 오류:', saveError);
